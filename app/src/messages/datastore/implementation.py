@@ -9,7 +9,11 @@ from app.src.messages.datastore.interface import MessageDataStore
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.src.messages.exceptions import DataStoreError, MessageNotFoundError
-from app.src.messages.models import MessageCreate, MessageResponse
+from app.src.messages.models import (
+    MessageCreate,
+    MessageResponse,
+    MessageDeleteResponse,
+)
 
 
 class MessageImplementation(MessageDataStore):
@@ -54,6 +58,33 @@ class MessageImplementation(MessageDataStore):
 
             await self.session.delete(message)
             await self.session.commit()
+
+        except SQLAlchemyError as e:
+            await self.session.rollback()
+            raise DataStoreError("failed to delete message") from e
+
+    async def delete_messages(
+        self, message_ids: List[uuid.UUID]
+    ) -> MessageDeleteResponse:
+        try:
+            stmt = select(MessageTable).where(MessageTable.id.in_(message_ids))
+            result = await self.session.execute(stmt)
+            messages = result.scalars().all()
+
+            found_ids = [m.id for m in messages]
+            not_found_ids = [mid for mid in message_ids if mid not in found_ids]
+
+            if not messages:
+                return MessageDeleteResponse(deleted_ids=[], not_found_ids=message_ids)
+
+            for message in messages:
+                await self.session.delete(message)
+
+            await self.session.commit()
+
+            return MessageDeleteResponse(
+                deleted_ids=found_ids, not_found_ids=not_found_ids
+            )
 
         except SQLAlchemyError as e:
             await self.session.rollback()

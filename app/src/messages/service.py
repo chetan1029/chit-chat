@@ -4,7 +4,11 @@ from typing import List
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.src.messages.datastore.implementation import MessageImplementation
-from app.src.messages.models import MessageCreate, MessageResponse
+from app.src.messages.models import (
+    MessageCreate,
+    MessageResponse,
+    MessageDeleteResponse,
+)
 
 
 class MessagesService:
@@ -27,4 +31,11 @@ class MessagesService:
     async def remove_message(self, message_id: uuid.UUID) -> None:
         return await MessageImplementation(self.session).delete_message(
             message_id=message_id
+        )
+
+    async def remove_messages(
+        self, message_ids: List[uuid.UUID]
+    ) -> MessageDeleteResponse:
+        return await MessageImplementation(self.session).delete_messages(
+            message_ids=message_ids
         )
