@@ -34,5 +34,6 @@ async def get_session() -> AsyncGenerator[AsyncSession, None]:
 
 async def init_db() -> None:
     async with get_engine().begin() as conn:
-        # TODO: add datamodel in the next setup
+        from app.src.messages.datastore.dbmodel import Message  # noqa: F401
+
         await conn.run_sync(SQLModel.metadata.create_all)
