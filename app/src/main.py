@@ -3,8 +3,8 @@ from app.src.api.router import router
 
 
 app = FastAPI(
-    title="Astro Ai Agent",
-    description="Astro Ai Agent Api endpoint services",
+    title="Chit Chat",
+    description="Chit Chat endpoint services",
     version="1.0.0",
 )
 
