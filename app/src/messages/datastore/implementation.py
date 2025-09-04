@@ -8,7 +8,7 @@ from app.src.messages.datastore.dbmodel import Message as MessageTable
 from app.src.messages.datastore.interface import MessageDataStore
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.src.messages.exceptions import DataStoreError
+from app.src.messages.exceptions import DataStoreError, MessageNotFoundError
 from app.src.messages.models import MessageCreate, MessageResponse
 
 
@@ -44,4 +44,17 @@ class MessageImplementation(MessageDataStore):
         except SQLAlchemyError as e:
             raise DataStoreError("failed to fetch messages") from e
 
-    async def delete_message(self, message_id: uuid.UUID) -> None: ...
+    async def delete_message(self, message_id: uuid.UUID) -> None:
+        try:
+            message = await self.session.get(MessageTable, message_id)
+            if not message:
+                raise MessageNotFoundError(
+                    "Message not found with message id: {}".format(message_id)
+                )
+
+            await self.session.delete(message)
+            await self.session.commit()
+
+        except SQLAlchemyError as e:
+            await self.session.rollback()
+            raise DataStoreError("failed to delete message") from e

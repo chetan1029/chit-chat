@@ -4,3 +4,7 @@ class MessageError(Exception):
 
 class DataStoreError(MessageError):
     pass
+
+
+class MessageNotFoundError(MessageError):
+    pass

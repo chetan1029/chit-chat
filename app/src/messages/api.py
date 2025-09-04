@@ -3,7 +3,7 @@ from typing import List
 
 from fastapi import APIRouter, status, Query, Depends, HTTPException
 
-from app.src.messages.exceptions import DataStoreError
+from app.src.messages.exceptions import DataStoreError, MessageNotFoundError
 from app.src.messages.models import MessageCreate, MessageResponse
 from app.src.messages.service import MessagesService
 from app.src.core.db import get_session
@@ -51,7 +51,18 @@ async def get_messages(
 
 
 @router.delete("/{message_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def remove_message(message_id: uuid.UUID) -> None: ...
+async def remove_message(
+    message_id: uuid.UUID, session: get_session = Depends(get_session)
+) -> None:
+    try:
+        return await MessagesService(session).remove_message(message_id=message_id)
+    except MessageNotFoundError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
+    except DataStoreError as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e),
+        )
 
 
 @router.post("/delete", status_code=status.HTTP_200_OK)

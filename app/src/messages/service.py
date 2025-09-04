@@ -24,4 +24,7 @@ class MessagesService:
         )
         return messages
 
-    async def remove_message(self, message_id: uuid.UUID) -> None: ...
+    async def remove_message(self, message_id: uuid.UUID) -> None:
+        return await MessageImplementation(self.session).delete_message(
+            message_id=message_id
+        )
