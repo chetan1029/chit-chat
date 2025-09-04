@@ -10,14 +10,19 @@ from app.src.messages.models import (
 
 class MessageDataStore(Protocol):
     async def create_message(self, message: MessageCreate) -> MessageResponse: ...
+
     async def fetch_messages(
         self, recipient: str, start: int, stop: int, order: str
     ) -> List[MessageResponse]: ...
+
     async def fetch_new_messages(
         self, recipient: str, limit: int
     ) -> List[MessageResponse]: ...
+
     async def delete_message(self, message_id: uuid.UUID) -> None: ...
 
     async def delete_messages(
-        self, message_id: List[uuid.UUID]
+        self, message_ids: List[uuid.UUID]
     ) -> MessageDeleteResponse: ...
+
+    async def mark_fetched(self, message_ids: List[uuid.UUID]) -> None: ...

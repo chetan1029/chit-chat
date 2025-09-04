@@ -1,6 +1,8 @@
 import uuid
+from datetime import datetime, timezone
 from typing import List
 
+from sqlalchemy import update
 from sqlalchemy.exc import SQLAlchemyError
 from sqlmodel import select
 
@@ -32,23 +34,38 @@ class MessageImplementation(MessageDataStore):
             await self.session.rollback()
             raise DataStoreError("failed to create message") from e
 
-    async def fetch_new_messages(self, recipient: str, limit: int) -> List[MessageResponse]:
+    async def fetch_new_messages(
+        self, recipient: str, limit: int
+    ) -> List[MessageResponse]:
         try:
             stmt = (
                 select(MessageTable)
-                .where(MessageTable.recipient == recipient)
+                .where(
+                    (MessageTable.recipient == recipient)
+                    & (MessageTable.fetched_at.is_(None))
+                )
                 .order_by(MessageTable.created_at.asc())
                 .limit(limit)
                 .with_for_update(skip_locked=True)
             )
             result = await self.session.execute(stmt)
             messages = result.scalars().all()
+
+            if not messages:
+                return []
+
+            # Mark message data fetched
+            message_ids = [m.id for m in messages]
+            await self.mark_fetched(message_ids)
+
             return [MessageResponse.model_validate(m) for m in messages]
 
         except SQLAlchemyError as e:
             raise DataStoreError("failed to fetch messages") from e
 
-    async def fetch_messages(self, recipient: str, start: int, stop: int, order: str) -> List[MessageResponse]:
+    async def fetch_messages(
+        self, recipient: str, start: int, stop: int, order: str
+    ) -> List[MessageResponse]:
         try:
             if start < 0:
                 start = 0
@@ -59,10 +76,7 @@ class MessageImplementation(MessageDataStore):
             offset = start
 
             # Build query
-            stmt = (
-                select(MessageTable)
-                .where(MessageTable.recipient == recipient)
-            )
+            stmt = select(MessageTable).where(MessageTable.recipient == recipient)
 
             if order.lower() == "desc":
                 stmt = stmt.order_by(MessageTable.created_at.desc())
@@ -119,3 +133,20 @@ class MessageImplementation(MessageDataStore):
         except SQLAlchemyError as e:
             await self.session.rollback()
             raise DataStoreError("failed to delete message") from e
+
+    async def mark_fetched(self, message_ids: List[uuid.UUID]) -> None:
+        try:
+            if not message_ids:
+                return
+
+            stmt = (
+                update(MessageTable)
+                .where(MessageTable.id.in_(message_ids))
+                .values(fetched_at=datetime.now(timezone.utc).replace(tzinfo=None))
+            )
+            await self.session.execute(stmt)
+            await self.session.commit()
+
+        except SQLAlchemyError as e:
+            await self.session.rollback()
+            raise DataStoreError("failed to mark messages as fetched") from e

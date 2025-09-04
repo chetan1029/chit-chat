@@ -51,10 +51,12 @@ async def get_messages(
     start: int = Query(0, ge=0),
     stop: int = Query(50, gt=0),
     order: str = Query("asc", regex="^(asc|desc)$"),
-session: get_session = Depends(get_session),
+    session: get_session = Depends(get_session),
 ) -> List[MessageResponse]:
     try:
-        return await MessagesService(session).get_messages(recipient, start, stop, order)
+        return await MessagesService(session).get_messages(
+            recipient, start, stop, order
+        )
     except DataStoreError as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -82,7 +84,7 @@ async def remove_message(
 )
 async def remove_messages(
     message_ids: List[uuid.UUID], session: get_session = Depends(get_session)
-) -> None:
+) -> MessageDeleteResponse:
     try:
         return await MessagesService(session).remove_messages(message_ids=message_ids)
     except MessageNotFoundError as e:
