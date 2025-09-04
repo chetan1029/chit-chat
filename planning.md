@@ -68,7 +68,7 @@ docker compose up --build
 ```
 
 **Config**
-- `DATABASE_URL` (set in `docker-compose.yml`). Defaults to Postgres container.
+- `DATABASE_URL` (set in `.env`). Defaults to Postgres container.
 
 ---
 
@@ -76,36 +76,56 @@ docker compose up --build
 
 **Create**
 ```bash
-curl -s -X POST 'http://localhost:8080/messages' \
+curl -X 'POST' \
+  'http://localhost:8080/messages/' \
+  -H 'accept: application/json' \
   -H 'Content-Type: application/json' \
-  -d '{"recipient":"alice@example.com","content":"hello, alice!"}'
+  -d '{
+  "recipient": "alice@example.com",
+  "content": "hello, alice!"
+}'
 ```
 
 **Fetch new** (marks fetched)
 ```bash
-curl -s 'http://localhost:8080/messages/new?recipient=alice@example.com&limit=100'
+curl -X 'GET' \
+  'http://localhost:8080/messages/new?recipient=alice%40example.com&limit=100' \
+  -H 'accept: application/json'
 ```
 
 **Fetch slice** (historical, incl. fetched)
 ```bash
-curl -s 'http://localhost:8080/messages?recipient=alice@example.com&start=0&stop=50&order=asc'
+curl -X 'GET' \
+  'http://localhost:8080/messages/?recipient=alice@example.com&start=0&stop=50&order=asc' \
+  -H 'accept: application/json'
 ```
 
 **Delete single**
 ```bash
-curl -i -X DELETE 'http://localhost:8080/messages/{uuid}'
+curl -X 'DELETE' \
+  'http://localhost:8080/messages/e6196138-b5d2-4395-a2f2-7456e7704271' \
+  -H 'accept: */*'
 ```
 
 **Delete multiple**
 ```bash
-curl -s -X POST 'http://localhost:8080/messages/delete' \
+curl -X 'POST' \
+  'http://localhost:8080/messages/delete' \
+  -H 'accept: application/json' \
   -H 'Content-Type: application/json' \
-  -d '{"ids":["uuid-1","uuid-2"]}'
+  -d '[
+  "e6196138-b5d2-4395-a2f2-7456e7704271",
+"f5b57bbb-be81-45e4-9313-297c0d223a74"
+]'
 ```
 
 **Health**
 ```bash
 curl -s 'http://localhost:8080/healthcheck'
+```
+
+```bash
+curl -s 'http://localhost:8080/healthcheck/db'
 ```
 
 ---

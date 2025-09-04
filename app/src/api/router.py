@@ -4,5 +4,5 @@ from app.src.messages.api import router as messages_router
 
 router = APIRouter()
 
-router.include_router(messages_router, prefix="/message", tags=["Message"])
+router.include_router(messages_router, prefix="/messages", tags=["Message"])
 router.include_router(healthcheck_router, prefix="", tags=["HealthCheck"])
