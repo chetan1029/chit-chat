@@ -1,0 +1,9 @@
+fastapi[standard]
+uvicorn[standard]
+httpx
+python-dotenv
+ruff
+sqlmodel
+pytest
+pydantic-settings
+asyncpg

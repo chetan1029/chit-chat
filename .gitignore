@@ -1,0 +1,16 @@
+.venv
+data
+.env
+
+# macOS system files
+.DS_Store
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# IDE/editor settings
+.vscode/
+.idea/

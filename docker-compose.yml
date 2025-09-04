@@ -1,0 +1,13 @@
+version: "3.9"
+
+services:
+  chit-chat:
+    build: .
+    container_name: chit-chat
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+    restart: unless-stopped
