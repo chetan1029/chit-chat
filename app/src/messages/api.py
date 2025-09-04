@@ -2,6 +2,7 @@ import uuid
 from typing import List
 
 from fastapi import APIRouter, status, Query, Depends, HTTPException
+from pydantic import EmailStr
 
 from app.src.messages.exceptions import DataStoreError, MessageNotFoundError
 from app.src.messages.models import (
@@ -32,12 +33,12 @@ async def set_message(
     "/new", status_code=status.HTTP_200_OK, response_model=List[MessageResponse]
 )
 async def get_new_messages(
-    recipient: str = Query(...),
+    recipient: EmailStr = Query(...),
     limit: int = Query(100, gt=0),
     session: get_session = Depends(get_session),
 ) -> List[MessageResponse]:
     try:
-        return await MessagesService(session).get_new_messages(recipient, limit)
+        return await MessagesService(session).get_new_messages(str(recipient), limit)
     except DataStoreError as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -47,7 +48,7 @@ async def get_new_messages(
 
 @router.get("/", status_code=status.HTTP_200_OK, response_model=List[MessageResponse])
 async def get_messages(
-    recipient: str = Query(...),
+    recipient: EmailStr = Query(...),
     start: int = Query(0, ge=0),
     stop: int = Query(50, gt=0),
     order: str = Query("asc", regex="^(asc|desc)$"),
@@ -55,7 +56,7 @@ async def get_messages(
 ) -> List[MessageResponse]:
     try:
         return await MessagesService(session).get_messages(
-            recipient, start, stop, order
+            str(recipient), start, stop, order
         )
     except DataStoreError as e:
         raise HTTPException(

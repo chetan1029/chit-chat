@@ -2,17 +2,23 @@ import uuid
 from datetime import datetime
 from typing import List
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, EmailStr, field_validator
 
 
 class Message(BaseModel):
-    recipient: str
+    recipient: EmailStr
     content: str
 
     model_config = ConfigDict(from_attributes=True)
 
 
-class MessageCreate(Message): ...
+class MessageCreate(Message):
+    @field_validator("content", mode="after")
+    def validate_and_normalize_content(cls, v: str) -> str:
+        normalized = v.strip()
+        if not normalized:
+            raise ValueError("Message content cannot be empty or just whitespace")
+        return normalized
 
 
 class MessageResponse(Message):

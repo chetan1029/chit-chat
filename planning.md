@@ -55,6 +55,7 @@ Message {
 - One logical consumer per `recipient`. “Fetched” means delivered once for that recipient. (Multiple clients fetching for the same recipient will not redeliver thanks to SKIP LOCKED.)
 - Plain text only; no attachments.
 - No auth.
+- Fetch all message act as a readonly so we are not going to mark new messages as fetched while calling fetch all messages
 
 ---
 
