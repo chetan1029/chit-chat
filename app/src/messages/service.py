@@ -21,10 +21,19 @@ class MessagesService:
         )
         return message
 
-    async def get_messages(self, recipient: str, limit: int) -> List[MessageResponse]:
-        messages = await MessageImplementation(self.session).fetch_messages(
+    async def get_new_messages(self, recipient: str, limit: int) -> List[MessageResponse]:
+        messages = await MessageImplementation(self.session).fetch_new_messages(
             recipient=recipient,
             limit=limit,
+        )
+        return messages
+
+    async def get_messages(self, recipient: str, start: int, stop: int, order: str) -> List[MessageResponse]:
+        messages = await MessageImplementation(self.session).fetch_messages(
+            recipient=recipient,
+            start=start,
+            stop=stop,
+            order=order,
         )
         return messages
 

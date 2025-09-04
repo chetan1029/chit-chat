@@ -37,7 +37,7 @@ async def get_new_messages(
     session: get_session = Depends(get_session),
 ) -> List[MessageResponse]:
     try:
-        return await MessagesService(session).get_messages(recipient, limit)
+        return await MessagesService(session).get_new_messages(recipient, limit)
     except DataStoreError as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -51,7 +51,15 @@ async def get_messages(
     start: int = Query(0, ge=0),
     stop: int = Query(50, gt=0),
     order: str = Query("asc", regex="^(asc|desc)$"),
-) -> List[MessageResponse]: ...
+session: get_session = Depends(get_session),
+) -> List[MessageResponse]:
+    try:
+        return await MessagesService(session).get_messages(recipient, start, stop, order)
+    except DataStoreError as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e),
+        )
 
 
 @router.delete("/{message_id}", status_code=status.HTTP_204_NO_CONTENT)

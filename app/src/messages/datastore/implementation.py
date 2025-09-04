@@ -32,7 +32,7 @@ class MessageImplementation(MessageDataStore):
             await self.session.rollback()
             raise DataStoreError("failed to create message") from e
 
-    async def fetch_messages(self, recipient: str, limit: int) -> List[MessageResponse]:
+    async def fetch_new_messages(self, recipient: str, limit: int) -> List[MessageResponse]:
         try:
             stmt = (
                 select(MessageTable)
@@ -43,6 +43,36 @@ class MessageImplementation(MessageDataStore):
             )
             result = await self.session.execute(stmt)
             messages = result.scalars().all()
+            return [MessageResponse.model_validate(m) for m in messages]
+
+        except SQLAlchemyError as e:
+            raise DataStoreError("failed to fetch messages") from e
+
+    async def fetch_messages(self, recipient: str, start: int, stop: int, order: str) -> List[MessageResponse]:
+        try:
+            if start < 0:
+                start = 0
+            if stop <= start:
+                return []
+
+            limit = stop - start
+            offset = start
+
+            # Build query
+            stmt = (
+                select(MessageTable)
+                .where(MessageTable.recipient == recipient)
+            )
+
+            if order.lower() == "desc":
+                stmt = stmt.order_by(MessageTable.created_at.desc())
+            else:
+                stmt = stmt.order_by(MessageTable.created_at.asc())
+
+            stmt = stmt.offset(offset).limit(limit)
+            result = await self.session.execute(stmt)
+            messages = result.scalars().all()
+
             return [MessageResponse.model_validate(m) for m in messages]
 
         except SQLAlchemyError as e:
