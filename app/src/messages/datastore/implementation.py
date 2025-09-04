@@ -1,4 +1,5 @@
 import uuid
+import logging
 from datetime import datetime, timezone
 from typing import List
 
@@ -17,9 +18,12 @@ from app.src.messages.models import (
     MessageDeleteResponse,
 )
 
+logger = logging.getLogger(__name__)
+
 
 class MessageImplementation(MessageDataStore):
     def __init__(self, session: AsyncSession) -> None:
+        logger.info(f"Initializing Message Implementation with session {session}")
         self.session = session
 
     async def create_message(self, message: MessageCreate) -> MessageResponse:
@@ -29,8 +33,12 @@ class MessageImplementation(MessageDataStore):
             await self.session.commit()
             await self.session.refresh(message_db)
 
+            logger.info(
+                "Successfully created Message with ID: {}".format(message_db.id)
+            )
             return MessageResponse.model_validate(message_db)
         except SQLAlchemyError as e:
+            logger.exception("Database error occurred while creating message")
             await self.session.rollback()
             raise DataStoreError("failed to create message") from e
 
@@ -61,21 +69,19 @@ class MessageImplementation(MessageDataStore):
             return [MessageResponse.model_validate(m) for m in messages]
 
         except SQLAlchemyError as e:
+            logger.exception("Database error occurred while fetching new messages")
             raise DataStoreError("failed to fetch messages") from e
 
     async def fetch_messages(
         self, recipient: str, start: int, stop: int, order: str
     ) -> List[MessageResponse]:
         try:
-            if start < 0:
-                start = 0
             if stop <= start:
                 return []
 
             limit = stop - start
             offset = start
 
-            # Build query
             stmt = select(MessageTable).where(MessageTable.recipient == recipient)
 
             if order.lower() == "desc":
@@ -90,6 +96,7 @@ class MessageImplementation(MessageDataStore):
             return [MessageResponse.model_validate(m) for m in messages]
 
         except SQLAlchemyError as e:
+            logger.exception("Database error occurred while fetching messages")
             raise DataStoreError("failed to fetch messages") from e
 
     async def delete_message(self, message_id: uuid.UUID) -> None:
@@ -131,6 +138,7 @@ class MessageImplementation(MessageDataStore):
             )
 
         except SQLAlchemyError as e:
+            logger.exception("Database error occurred while deleting message")
             await self.session.rollback()
             raise DataStoreError("failed to delete message") from e
 
@@ -148,5 +156,6 @@ class MessageImplementation(MessageDataStore):
             await self.session.commit()
 
         except SQLAlchemyError as e:
+            logger.exception("Database error occurred while marking fetched messages")
             await self.session.rollback()
             raise DataStoreError("failed to mark messages as fetched") from e
